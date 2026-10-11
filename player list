@@ -1,0 +1,239 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local lp = Players.LocalPlayer
+local pinfo = _G.AzucarPinfo
+local env = getgenv and getgenv() or _G
+if env.PlayerListCleanup then pcall(env.PlayerListCleanup) end
+local conns, alive = {}, true
+local function conn(signal, fn) local c = signal:Connect(fn); conns[#conns + 1] = c; return c end
+
+local PINK     = Color3.fromRGB(255, 150, 200)
+local PINK_DIM = Color3.fromRGB(255, 190, 220)
+local TXT      = Color3.fromRGB(20, 20, 20)
+local PINK_BG  = Color3.fromRGB(255, 255, 255)
+local PINK_ROW = Color3.fromRGB(255, 240, 247)
+local PINK_BAR = Color3.fromRGB(255, 218, 236)
+local ROOT_W, ROOT_H = 340, 420
+
+local function new(class, props, children)
+	local inst = Instance.new(class)
+	for k, v in pairs(props or {}) do inst[k] = v end
+	for _, child in ipairs(children or {}) do child.Parent = inst end
+	return inst
+end
+local function corner(r) return new("UICorner", { CornerRadius = UDim.new(0, r) }) end
+local function circle() return new("UICorner", { CornerRadius = UDim.new(1, 0) }) end
+local function stroke(color, th) return new("UIStroke", { Color = color, Thickness = th }) end
+
+local okHui, hui = pcall(function() return gethui and gethui() end)
+for _, parent in ipairs({ (okHui and hui) or false, lp:FindFirstChild("PlayerGui") or false }) do
+	if parent then
+		for _, g in ipairs(parent:GetChildren()) do
+			if g.Name == "PlayerListUI" then pcall(g.Destroy, g) end
+		end
+	end
+end
+local ScreenGui = new("ScreenGui", {
+	Name = "PlayerListUI",
+	ResetOnSpawn = false,
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+	DisplayOrder = 999,
+})
+ScreenGui.Parent = (okHui and hui) or lp:WaitForChild("PlayerGui")
+
+local Root = new("Frame", {
+	Name = "Root",
+	Size = UDim2.new(0, ROOT_W, 0, ROOT_H),
+	Position = UDim2.new(1, -ROOT_W - 24, 0.5, -ROOT_H / 2),
+	BackgroundColor3 = PINK_BG,
+	BackgroundTransparency = 0,
+	ClipsDescendants = true,
+	Parent = ScreenGui,
+}, { corner(20), stroke(PINK, 2) })
+
+local Aura = new("Frame", {
+	Name = "Aura",
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Size = UDim2.new(0, ROOT_W, 0, ROOT_H),
+	BackgroundTransparency = 1,
+	ZIndex = 0,
+	Parent = ScreenGui,
+})
+for i = 0, 5 do
+	local expand = i * 14
+	new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.5, 0),
+		Size = UDim2.new(1, expand, 1, expand),
+		BackgroundColor3 = PINK,
+		BackgroundTransparency = 0.8 + i * 0.03,
+		BorderSizePixel = 0,
+		ZIndex = 0,
+		Parent = Aura,
+	}, { corner(20 + expand / 2) })
+end
+local function syncAura()
+	Aura.Position = Root.Position + UDim2.new(0, ROOT_W / 2, 0, ROOT_H / 2)
+end
+syncAura()
+Root:GetPropertyChangedSignal("Position"):Connect(syncAura)
+
+local TopBar = new("Frame", {
+	Size = UDim2.new(1, 0, 0, 40),
+	BackgroundColor3 = PINK_ROW,
+	Parent = Root,
+}, { corner(20), stroke(PINK, 1) })
+new("TextLabel", {
+	Text = "Players",
+	Font = Enum.Font.GothamBold,
+	TextSize = 15,
+	TextColor3 = TXT,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	BackgroundTransparency = 1,
+	Position = UDim2.new(0, 14, 0, 0),
+	Size = UDim2.new(1, -60, 1, 0),
+	Parent = TopBar,
+})
+local CountLabel = new("TextLabel", {
+	Text = "0",
+	Font = Enum.Font.GothamBold,
+	TextSize = 14,
+	TextColor3 = TXT,
+	TextXAlignment = Enum.TextXAlignment.Right,
+	BackgroundTransparency = 1,
+	Position = UDim2.new(1, -50, 0, 0),
+	Size = UDim2.new(0, 36, 1, 0),
+	Parent = TopBar,
+})
+
+conn(UserInputService.InputBegan, function(input, gp)
+	if gp then return end
+	if input.KeyCode == Enum.KeyCode.X then
+		local v = not Root.Visible
+		Root.Visible, Aura.Visible = v, v
+	end
+end)
+
+local dragging, dragStart, startPos
+TopBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging, dragStart, startPos = true, input.Position, Root.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then dragging = false end
+		end)
+	end
+end)
+conn(UserInputService.InputChanged, function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		local d = input.Position - dragStart
+		Root.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+	end
+end)
+
+local List = new("ScrollingFrame", {
+	Size = UDim2.new(1, -16, 1, -56),
+	Position = UDim2.new(0, 8, 0, 48),
+	BackgroundTransparency = 1,
+	ScrollBarThickness = 3,
+	ScrollBarImageColor3 = PINK,
+	CanvasSize = UDim2.new(0, 0, 0, 0),
+	AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	Parent = Root,
+}, { new("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }) })
+
+local rows = {}
+
+local function buildRow(player)
+	if rows[player] then return end
+	local Row = new("Frame", {
+		Name = player.Name,
+		Size = UDim2.new(1, 0, 0, 56),
+		BackgroundColor3 = PINK_ROW,
+		Parent = List,
+	}, {
+		corner(14), stroke(PINK_DIM, 1),
+		new("UIPadding", { PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }),
+	})
+	new("ImageLabel", {
+		Size = UDim2.new(0, 40, 0, 40),
+		BackgroundColor3 = PINK_BAR,
+		Image = "rbxthumb://type=AvatarHeadShot&id=" .. player.UserId .. "&w=150&h=150",
+		Parent = Row,
+	}, { circle(), stroke(PINK, 1.5) })
+	new("TextLabel", {
+		Text = player.Name,
+		Font = Enum.Font.GothamBold,
+		TextSize = 13,
+		TextColor3 = TXT,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		BackgroundTransparency = 1,
+		Position = UDim2.new(0, 50, 0, 0),
+		Size = UDim2.new(1, -50, 0, 18),
+		Parent = Row,
+	})
+	local Track = new("Frame", {
+		Size = UDim2.new(1, -50, 0, 10),
+		Position = UDim2.new(0, 50, 0, 24),
+		BackgroundColor3 = PINK_BAR,
+		Parent = Row,
+	}, { corner(5) })
+	local Fill = new("Frame", {
+		Size = UDim2.new(1, 0, 1, 0),
+		BackgroundColor3 = PINK,
+		Parent = Track,
+	}, { corner(5) })
+	local HP = new("TextLabel", {
+		Text = "100 / 100",
+		Font = Enum.Font.GothamMedium,
+		TextSize = 10,
+		TextColor3 = TXT,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		BackgroundTransparency = 1,
+		Position = UDim2.new(0, 50, 0, 36),
+		Size = UDim2.new(1, -50, 0, 12),
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Parent = Row,
+	})
+	rows[player] = { Row = Row, Fill = Fill, HP = HP, last = "" }
+end
+
+local function updateCount() CountLabel.Text = tostring(#Players:GetPlayers()) end
+
+conn(Players.PlayerAdded, function(p) buildRow(p); updateCount() end)
+conn(Players.PlayerRemoving, function(p)
+	local e = rows[p]
+	if e then e.Row:Destroy(); rows[p] = nil end
+	updateCount()
+end)
+for _, p in ipairs(Players:GetPlayers()) do buildRow(p) end
+updateCount()
+
+task.spawn(function()
+	while alive do
+		for player, e in pairs(rows) do
+			if player.Parent ~= Players then
+				e.Row:Destroy(); rows[player] = nil
+			else
+				local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				local hp, mx = 0, 100
+				if hum and hum.MaxHealth > 0 then hp, mx = hum.Health, hum.MaxHealth end
+				local team, bounty, fruit, race = pinfo(player)
+				local txt = string.format("%d/%d | %s | %s | %s | %s", math.floor(hp + 0.5), math.floor(mx + 0.5), team:gsub("s$", ""), bounty, fruit, race)
+				if txt ~= e.last then
+					e.last = txt
+					e.HP.Text = txt
+					TweenService:Create(e.Fill, TweenInfo.new(0.25), { Size = UDim2.new(math.clamp(hp / mx, 0, 1), 0, 1, 0) }):Play()
+				end
+			end
+		end
+		updateCount()
+		task.wait(0.3)
+	end
+end)
+env.PlayerListCleanup = function()
+	alive = false
+	for _, c in ipairs(conns) do c:Disconnect() end
+	ScreenGui:Destroy()
+end
