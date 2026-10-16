@@ -46,6 +46,7 @@ ScreenGui.Parent = (okHui and hui) or lp:WaitForChild("PlayerGui")
 
 local Root = new("Frame", {
 	Name = "Root",
+	Visible = false,
 	Size = UDim2.new(0, ROOT_W, 0, ROOT_H),
 	Position = UDim2.new(1, -ROOT_W - 24, 0.5, -ROOT_H / 2),
 	BackgroundColor3 = BG,
@@ -56,6 +57,7 @@ local Root = new("Frame", {
 
 local Aura = new("Frame", {
 	Name = "Aura",
+	Visible = false,
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	Size = UDim2.new(0, ROOT_W, 0, ROOT_H),
 	BackgroundTransparency = 1,
@@ -238,4 +240,8 @@ env.PlayerListCleanup = function()
 	alive = false
 	for _, c in ipairs(conns) do c:Disconnect() end
 	ScreenGui:Destroy()
+end
+return function(on)
+	local v = on and true or false
+	Root.Visible, Aura.Visible = v, v
 end
