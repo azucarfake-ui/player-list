@@ -16,7 +16,9 @@ local PANEL    = Color3.fromRGB(34, 22, 54)
 local BG       = Color3.fromRGB(22, 14, 34)
 local ROW      = Color3.fromRGB(28, 18, 44)
 local BAR      = Color3.fromRGB(52, 34, 82)
-local ROOT_W, ROOT_H = 330, 420
+local GENGAR_IMAGE = "" -- pega aqui el id de tu imagen, por ejemplo "rbxassetid://123456789" (PNG con fondo transparente)
+local BANNER = GENGAR_IMAGE ~= "" and 62 or 0
+local ROOT_W, ROOT_H = 330, 420 + BANNER
 
 local function new(class, props, children)
 	local inst = Instance.new(class)
@@ -62,32 +64,18 @@ local function syncAura() Aura.Position = Root.Position + UDim2.new(0, ROOT_W / 
 syncAura()
 Root:GetPropertyChangedSignal("Position"):Connect(syncAura)
 
-local TopBar = new("Frame", { Size = UDim2.new(1, 0, 0, 40), BackgroundColor3 = PANEL, Parent = Root }, { corner(18), stroke(PURPLE, 1) })
+local TopBar = new("Frame", { Size = UDim2.new(1, 0, 0, 40), Position = UDim2.new(0, 0, 0, BANNER), BackgroundColor3 = PANEL, Parent = Root }, { corner(18), stroke(PURPLE, 1) })
 
--- ojos de Gengar en la cabecera
-local eyesBox = new("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 12, 0.5, 0), Size = UDim2.fromOffset(34, 14), Parent = TopBar })
-local eyes = {}
-for i, side in ipairs({ 1, -1 }) do
-	local e = new("Frame", {
-		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(i == 1 and 0.25 or 0.75, 0, 0.5, 0), Size = UDim2.fromOffset(15, 9),
-		BorderSizePixel = 0, BackgroundColor3 = EYE, Rotation = side * 16, Parent = eyesBox,
-	}, { new("UICorner", { CornerRadius = UDim.new(0.45, 0) }) })
-	new("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(2, 7), BorderSizePixel = 0, BackgroundColor3 = Color3.new(1, 1, 1), Parent = e })
-	eyes[i] = e
+if GENGAR_IMAGE ~= "" then
+	new("ImageLabel", {
+		BackgroundTransparency = 1, Image = GENGAR_IMAGE, ScaleType = Enum.ScaleType.Fit,
+		Position = UDim2.new(0, 0, 0, 2), Size = UDim2.new(1, 0, 0, BANNER - 4), Parent = Root,
+	})
 end
-task.spawn(function()
-	while alive do
-		task.wait(math.random(30, 70) / 10)
-		if not alive then break end
-		for _, e in ipairs(eyes) do e.Size = UDim2.fromOffset(15, 2) end
-		task.wait(0.12)
-		for _, e in ipairs(eyes) do e.Size = UDim2.fromOffset(15, 9) end
-	end
-end)
 
 new("TextLabel", {
 	Text = "Gengar's Watchlist", Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = TXT, TextXAlignment = Enum.TextXAlignment.Left,
-	BackgroundTransparency = 1, Position = UDim2.new(0, 56, 0, 0), Size = UDim2.new(1, -100, 1, 0), Parent = TopBar,
+	BackgroundTransparency = 1, Position = UDim2.new(0, 14, 0, 0), Size = UDim2.new(1, -60, 1, 0), Parent = TopBar,
 })
 local CountLabel = new("TextLabel", {
 	Text = "0", Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = EYE, TextXAlignment = Enum.TextXAlignment.Right,
@@ -119,7 +107,7 @@ conn(UserInputService.InputChanged, function(input)
 end)
 
 local List = new("ScrollingFrame", {
-	Size = UDim2.new(1, -16, 1, -80), Position = UDim2.new(0, 8, 0, 48), BackgroundTransparency = 1, ScrollBarThickness = 3,
+	Size = UDim2.new(1, -16, 1, -80 - BANNER), Position = UDim2.new(0, 8, 0, 48 + BANNER), BackgroundTransparency = 1, ScrollBarThickness = 3,
 	ScrollBarImageColor3 = PURPLE, CanvasSize = UDim2.new(0, 0, 0, 0), AutomaticCanvasSize = Enum.AutomaticSize.Y, Parent = Root,
 }, { new("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }) })
 
