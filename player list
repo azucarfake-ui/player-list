@@ -2,21 +2,21 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local lp = Players.LocalPlayer
-local pinfo = _G.AzucarPinfo
+local pinfo = _G.GengarPinfo or function() return "?", "0", "None", "?" end
 local env = getgenv and getgenv() or _G
-if env.PlayerListCleanup then pcall(env.PlayerListCleanup) end
+if env.GengarPlayerListCleanup then pcall(env.GengarPlayerListCleanup) end
 local conns, alive = {}, true
 local function conn(signal, fn) local c = signal:Connect(fn); conns[#conns + 1] = c; return c end
 
-local GREEN     = Color3.fromRGB(107, 143, 78)
-local GREEN_DIM = Color3.fromRGB(88, 110, 76)
-local TXT      = Color3.fromRGB(226, 232, 208)
-local ORANGE   = Color3.fromRGB(217, 130, 43)
-local PANEL    = Color3.fromRGB(58, 72, 52)
-local BG  = Color3.fromRGB(47, 59, 42)
-local ROW = Color3.fromRGB(53, 66, 47)
-local BAR = Color3.fromRGB(74, 92, 66)
-local ROOT_W, ROOT_H = 340, 420
+local PURPLE   = Color3.fromRGB(110, 66, 170)
+local PURPLE_D = Color3.fromRGB(70, 42, 112)
+local TXT      = Color3.fromRGB(236, 226, 255)
+local EYE      = Color3.fromRGB(230, 40, 72)
+local PANEL    = Color3.fromRGB(34, 22, 54)
+local BG       = Color3.fromRGB(22, 14, 34)
+local ROW      = Color3.fromRGB(28, 18, 44)
+local BAR      = Color3.fromRGB(52, 34, 82)
+local ROOT_W, ROOT_H = 330, 420
 
 local function new(class, props, children)
 	local inst = Instance.new(class)
@@ -32,83 +32,66 @@ local okHui, hui = pcall(function() return gethui and gethui() end)
 for _, parent in ipairs({ (okHui and hui) or false, lp:FindFirstChild("PlayerGui") or false }) do
 	if parent then
 		for _, g in ipairs(parent:GetChildren()) do
-			if g.Name == "PlayerListUI" then pcall(g.Destroy, g) end
+			if g.Name == "GengarPlayerListUI" then pcall(g.Destroy, g) end
 		end
 	end
 end
 local ScreenGui = new("ScreenGui", {
-	Name = "PlayerListUI",
-	ResetOnSpawn = false,
-	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-	DisplayOrder = 999,
+	Name = "GengarPlayerListUI", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, DisplayOrder = 999,
 })
 ScreenGui.Parent = (okHui and hui) or lp:WaitForChild("PlayerGui")
 
 local Root = new("Frame", {
-	Name = "Root",
-	Visible = false,
-	Size = UDim2.new(0, ROOT_W, 0, ROOT_H),
-	Position = UDim2.new(1, -ROOT_W - 24, 0.5, -ROOT_H / 2),
-	BackgroundColor3 = BG,
-	BackgroundTransparency = 0,
-	ClipsDescendants = true,
-	Parent = ScreenGui,
-}, { corner(20), stroke(GREEN, 2) })
+	Name = "Root", Visible = false, Size = UDim2.new(0, ROOT_W, 0, ROOT_H),
+	Position = UDim2.new(1, -ROOT_W - 24, 0.5, -ROOT_H / 2), BackgroundColor3 = BG, ClipsDescendants = true, Parent = ScreenGui,
+}, { corner(18), stroke(PURPLE, 2) })
 
+-- aura morada
 local Aura = new("Frame", {
-	Name = "Aura",
-	Visible = false,
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Size = UDim2.new(0, ROOT_W, 0, ROOT_H),
-	BackgroundTransparency = 1,
-	ZIndex = 0,
-	Parent = ScreenGui,
+	Name = "Aura", Visible = false, AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.new(0, ROOT_W, 0, ROOT_H),
+	BackgroundTransparency = 1, ZIndex = 0, Parent = ScreenGui,
 })
 for i = 0, 5 do
 	local expand = i * 14
 	new("Frame", {
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(0.5, 0, 0.5, 0),
-		Size = UDim2.new(1, expand, 1, expand),
-		BackgroundColor3 = GREEN,
-		BackgroundTransparency = 0.8 + i * 0.03,
-		BorderSizePixel = 0,
-		ZIndex = 0,
-		Parent = Aura,
-	}, { corner(20 + expand / 2) })
+		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0), Size = UDim2.new(1, expand, 1, expand),
+		BackgroundColor3 = PURPLE, BackgroundTransparency = 0.8 + i * 0.03, BorderSizePixel = 0, ZIndex = 0, Parent = Aura,
+	}, { corner(18 + expand / 2) })
 end
-local function syncAura()
-	Aura.Position = Root.Position + UDim2.new(0, ROOT_W / 2, 0, ROOT_H / 2)
-end
+local function syncAura() Aura.Position = Root.Position + UDim2.new(0, ROOT_W / 2, 0, ROOT_H / 2) end
 syncAura()
 Root:GetPropertyChangedSignal("Position"):Connect(syncAura)
 
-local TopBar = new("Frame", {
-	Size = UDim2.new(1, 0, 0, 40),
-	BackgroundColor3 = PANEL,
-	Parent = Root,
-}, { corner(20), stroke(GREEN, 1) })
+local TopBar = new("Frame", { Size = UDim2.new(1, 0, 0, 40), BackgroundColor3 = PANEL, Parent = Root }, { corner(18), stroke(PURPLE, 1) })
+
+-- ojos de Gengar en la cabecera
+local eyesBox = new("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 12, 0.5, 0), Size = UDim2.fromOffset(34, 14), Parent = TopBar })
+local eyes = {}
+for i, side in ipairs({ 1, -1 }) do
+	local e = new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(i == 1 and 0.25 or 0.75, 0, 0.5, 0), Size = UDim2.fromOffset(15, 9),
+		BorderSizePixel = 0, BackgroundColor3 = EYE, Rotation = side * 16, Parent = eyesBox,
+	}, { new("UICorner", { CornerRadius = UDim.new(0.45, 0) }) })
+	new("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(2, 7), BorderSizePixel = 0, BackgroundColor3 = Color3.new(1, 1, 1), Parent = e })
+	eyes[i] = e
+end
+task.spawn(function()
+	while alive do
+		task.wait(math.random(30, 70) / 10)
+		if not alive then break end
+		for _, e in ipairs(eyes) do e.Size = UDim2.fromOffset(15, 2) end
+		task.wait(0.12)
+		for _, e in ipairs(eyes) do e.Size = UDim2.fromOffset(15, 9) end
+	end
+end)
+
 new("TextLabel", {
-	Text = "Players",
-	Font = Enum.Font.GothamBold,
-	TextSize = 15,
-	TextColor3 = TXT,
-	TextXAlignment = Enum.TextXAlignment.Left,
-	BackgroundTransparency = 1,
-	Position = UDim2.new(0, 14, 0, 0),
-	Size = UDim2.new(1, -60, 1, 0),
-	Parent = TopBar,
+	Text = "Gengar's Watchlist", Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = TXT, TextXAlignment = Enum.TextXAlignment.Left,
+	BackgroundTransparency = 1, Position = UDim2.new(0, 56, 0, 0), Size = UDim2.new(1, -100, 1, 0), Parent = TopBar,
 })
 local CountLabel = new("TextLabel", {
-	Text = "0",
-	Font = Enum.Font.GothamBold,
-	TextSize = 14,
-	TextColor3 = ORANGE,
-	TextXAlignment = Enum.TextXAlignment.Right,
-	BackgroundTransparency = 1,
-	Position = UDim2.new(1, -50, 0, 0),
-	Size = UDim2.new(0, 36, 1, 0),
-	Parent = TopBar,
+	Text = "0", Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = EYE, TextXAlignment = Enum.TextXAlignment.Right,
+	BackgroundTransparency = 1, Position = UDim2.new(1, -50, 0, 0), Size = UDim2.new(0, 36, 1, 0), Parent = TopBar,
 })
 
 conn(UserInputService.InputBegan, function(input, gp)
@@ -136,69 +119,41 @@ conn(UserInputService.InputChanged, function(input)
 end)
 
 local List = new("ScrollingFrame", {
-	Size = UDim2.new(1, -16, 1, -56),
-	Position = UDim2.new(0, 8, 0, 48),
-	BackgroundTransparency = 1,
-	ScrollBarThickness = 3,
-	ScrollBarImageColor3 = GREEN,
-	CanvasSize = UDim2.new(0, 0, 0, 0),
-	AutomaticCanvasSize = Enum.AutomaticSize.Y,
-	Parent = Root,
+	Size = UDim2.new(1, -16, 1, -80), Position = UDim2.new(0, 8, 0, 48), BackgroundTransparency = 1, ScrollBarThickness = 3,
+	ScrollBarImageColor3 = PURPLE, CanvasSize = UDim2.new(0, 0, 0, 0), AutomaticCanvasSize = Enum.AutomaticSize.Y, Parent = Root,
 }, { new("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }) })
+
+-- sonrisa de Gengar abajo (dientes blancos)
+local Grin = new("Frame", { Size = UDim2.new(1, 0, 0, 22), Position = UDim2.new(0, 0, 1, -22), BackgroundColor3 = PANEL, BorderSizePixel = 0, Parent = Root })
+new("Frame", { Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = PURPLE, BorderSizePixel = 0, Parent = Grin })
+for i = 0, 13 do
+	new("Frame", {
+		Size = UDim2.fromOffset(12, i % 2 == 0 and 9 or 6), Position = UDim2.new(0, 8 + i * 22, 0, 4),
+		BackgroundColor3 = Color3.fromRGB(245, 240, 255), BorderSizePixel = 0, Parent = Grin,
+	}, { new("UICorner", { CornerRadius = UDim.new(0, 3) }) })
+end
 
 local rows = {}
 
 local function buildRow(player)
 	if rows[player] then return end
-	local Row = new("Frame", {
-		Name = player.Name,
-		Size = UDim2.new(1, 0, 0, 56),
-		BackgroundColor3 = ROW,
-		Parent = List,
-	}, {
-		corner(14), stroke(GREEN_DIM, 1),
+	local Row = new("Frame", { Name = player.Name, Size = UDim2.new(1, 0, 0, 56), BackgroundColor3 = ROW, Parent = List }, {
+		corner(14), stroke(PURPLE_D, 1),
 		new("UIPadding", { PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }),
 	})
 	new("ImageLabel", {
-		Size = UDim2.new(0, 40, 0, 40),
-		BackgroundColor3 = BAR,
-		Image = "rbxthumb://type=AvatarHeadShot&id=" .. player.UserId .. "&w=150&h=150",
-		Parent = Row,
-	}, { circle(), stroke(GREEN, 1.5) })
+		Size = UDim2.new(0, 40, 0, 40), BackgroundColor3 = BAR,
+		Image = "rbxthumb://type=AvatarHeadShot&id=" .. player.UserId .. "&w=150&h=150", Parent = Row,
+	}, { circle(), stroke(PURPLE, 1.5) })
 	new("TextLabel", {
-		Text = player.Name,
-		Font = Enum.Font.GothamBold,
-		TextSize = 13,
-		TextColor3 = TXT,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextTruncate = Enum.TextTruncate.AtEnd,
-		BackgroundTransparency = 1,
-		Position = UDim2.new(0, 50, 0, 0),
-		Size = UDim2.new(1, -50, 0, 18),
-		Parent = Row,
+		Text = player.Name, Font = Enum.Font.GothamBold, TextSize = 13, TextColor3 = TXT, TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.AtEnd, BackgroundTransparency = 1, Position = UDim2.new(0, 50, 0, 0), Size = UDim2.new(1, -50, 0, 18), Parent = Row,
 	})
-	local Track = new("Frame", {
-		Size = UDim2.new(1, -50, 0, 10),
-		Position = UDim2.new(0, 50, 0, 24),
-		BackgroundColor3 = BAR,
-		Parent = Row,
-	}, { corner(5) })
-	local Fill = new("Frame", {
-		Size = UDim2.new(1, 0, 1, 0),
-		BackgroundColor3 = GREEN,
-		Parent = Track,
-	}, { corner(5) })
+	local Track = new("Frame", { Size = UDim2.new(1, -50, 0, 10), Position = UDim2.new(0, 50, 0, 24), BackgroundColor3 = BAR, Parent = Row }, { corner(5) })
+	local Fill = new("Frame", { Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = PURPLE, Parent = Track }, { corner(5) })
 	local HP = new("TextLabel", {
-		Text = "100 / 100",
-		Font = Enum.Font.GothamMedium,
-		TextSize = 10,
-		TextColor3 = TXT,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		BackgroundTransparency = 1,
-		Position = UDim2.new(0, 50, 0, 36),
-		Size = UDim2.new(1, -50, 0, 12),
-		TextTruncate = Enum.TextTruncate.AtEnd,
-		Parent = Row,
+		Text = "100 / 100", Font = Enum.Font.GothamMedium, TextSize = 10, TextColor3 = Color3.fromRGB(190, 170, 225), TextXAlignment = Enum.TextXAlignment.Left,
+		BackgroundTransparency = 1, Position = UDim2.new(0, 50, 0, 36), Size = UDim2.new(1, -50, 0, 12), TextTruncate = Enum.TextTruncate.AtEnd, Parent = Row,
 	})
 	rows[player] = { Row = Row, Fill = Fill, HP = HP, last = "" }
 end
@@ -224,11 +179,12 @@ task.spawn(function()
 				local hp, mx = 0, 100
 				if hum and hum.MaxHealth > 0 then hp, mx = hum.Health, hum.MaxHealth end
 				local team, bounty, fruit, race = pinfo(player)
-				local txt = string.format("%d/%d | %s | %s | %s | %s", math.floor(hp + 0.5), math.floor(mx + 0.5), team:gsub("s$", ""), bounty, fruit, race)
+				local txt = string.format("%d/%d | %s | %s | %s | %s", math.floor(hp + 0.5), math.floor(mx + 0.5), tostring(team):gsub("s$", ""), bounty, fruit, race)
 				if txt ~= e.last then
 					e.last = txt
 					e.HP.Text = txt
-					TweenService:Create(e.Fill, TweenInfo.new(0.25), { Size = UDim2.new(math.clamp(hp / mx, 0, 1), 0, 1, 0) }):Play()
+					local ratio = math.clamp(hp / mx, 0, 1)
+					TweenService:Create(e.Fill, TweenInfo.new(0.25), { Size = UDim2.new(ratio, 0, 1, 0), BackgroundColor3 = ratio < 0.3 and EYE or PURPLE }):Play()
 				end
 			end
 		end
@@ -236,7 +192,7 @@ task.spawn(function()
 		task.wait(0.3)
 	end
 end)
-env.PlayerListCleanup = function()
+env.GengarPlayerListCleanup = function()
 	alive = false
 	for _, c in ipairs(conns) do c:Disconnect() end
 	ScreenGui:Destroy()
